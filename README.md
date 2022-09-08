@@ -168,6 +168,6 @@ To show the comments of the post, first, we need to fetch all the comments of th
         <p><?php echo $comment->content->rendered; ?></p>
     </div>
 <?php } ?>
+```
 
 This will first fetch all the comments of that post. Then it will loop through each comment and will skip the loop iteration if the comment is not approved yet. Then, it will create a <div> tag with styles the same as we did for the blog listing. The author_avatar_urls object in each $comment is an object. So we need to convert that to an array using (array) typecasting. Then we will loop through it, and display the profile image of the user who posted that comment. After that, we are using a break statement so it will not show multiple images, it will stop the loop after displaying one image. User profile images are in different dimensions, but we need to show only one. And finally, we display the name of the person who posted the comment and the comment itself.
-```
