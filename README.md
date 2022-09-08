@@ -79,3 +79,95 @@ We are making the title a hyperlink, so when clicked, it will redirect the user 
 # Single post
     
 To show the post detail inside your website, simply create a file named show-post.php and write the following code in it:
+
+```php
+<?php
+    $slug = $_GET["slug"];
+    $blog_api_url = "https://yourblogdomain/wp-json/wp/v2";
+
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $blog_api_url . "/posts?slug=" . $slug,
+        CURLOPT_RETURNTRANSFER => 1
+    ]);
+    $response = curl_exec($curl);
+    curl_close($curl);
+
+    $posts = json_decode($response);
+    if (count($posts) == 0)
+    {
+        die("Post not found.");
+    }
+    
+    $date = date("d M, Y H:i:s", strtotime($posts[0]->date));
+    $status = $posts[0]->status; // "publish"
+    if ($status != "publish")
+    {
+        die("Post not published.");
+    }
+    $title = $posts[0]->title->rendered;
+    $content = $posts[0]->content->rendered;
+
+    $curlMedia = curl_init();
+    curl_setopt_array($curlMedia, [
+        CURLOPT_URL => $blog_api_url . "/media/" . $posts[0]->featured_media,
+        CURLOPT_RETURNTRANSFER => 1
+    ]);
+    $responseMedia = curl_exec($curlMedia);
+
+    $responseMedia = json_decode($responseMedia);
+    $mediaTitle = $responseMedia->title->rendered;
+    $altText = $responseMedia->alt_text;
+    $mediaSourceUrl = $responseMedia->source_url;
+?>
+
+<!-- Post title -->
+<h1><?php echo $title; ?></h1>
+
+<!-- Post meta content -->
+<p>Posted on <?php echo $date; ?></p>
+
+<!-- Preview featured image -->
+<?php if (!empty($mediaSourceUrl)) { ?>
+    <img src="<?php echo $mediaSourceUrl; ?>" alt="<?php echo $altText; ?>" title="<?php echo $mediaTitle; ?>" style="width: 100%;" />
+<?php } ?>
+
+<!-- Post content-->
+<section>
+    <?php echo $content; ?>
+</section>
+```
+
+This will show the post title in the heading. Date the post was published. Featured image if available, the featured image will also have an alt text that will be displayed in case the image is not found. It will also have a title attribute that will be visible when the user moves the mouse over the image (hover effect). Finally, we are displaying the complete content of the post.
+
+## Show comments of the post
+
+To show the comments of the post, first, we need to fetch all the comments of the post. We are again going to use the CURL request on WordPress comments API. Write the following code below post content:
+
+```php
+<?php
+    $curlComments = curl_init();
+    curl_setopt_array($curlComments, [
+        CURLOPT_URL => $blog_api_url . "/comments/?slug=" . $posts[0]->slug,
+        CURLOPT_RETURNTRANSFER => 1
+    ]);
+    $responseComments = curl_exec($curlComments);
+    $responseComments = json_decode($responseComments);
+
+    foreach ($responseComments as $comment) {
+        if ($comment->status != "approved") {
+            continue;
+        }
+?>
+    <div style="border: 1px solid black; margin: 10px; padding: 10px;">
+        <?php foreach (((array) $comment->author_avatar_urls) as $avatar_url) { ?>
+            <img src="<?php echo $avatar_url; ?>" style="width: 100px;" />
+        <?php break; } ?>
+
+        <p><?php echo $comment->author_name; ?></p>
+        <p><?php echo $comment->content->rendered; ?></p>
+    </div>
+<?php } ?>
+
+This will first fetch all the comments of that post. Then it will loop through each comment and will skip the loop iteration if the comment is not approved yet. Then, it will create a <div> tag with styles the same as we did for the blog listing. The author_avatar_urls object in each $comment is an object. So we need to convert that to an array using (array) typecasting. Then we will loop through it, and display the profile image of the user who posted that comment. After that, we are using a break statement so it will not show multiple images, it will stop the loop after displaying one image. User profile images are in different dimensions, but we need to show only one. And finally, we display the name of the person who posted the comment and the comment itself.
+```
