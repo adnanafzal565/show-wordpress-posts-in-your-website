@@ -148,7 +148,7 @@ To show the comments of the post, first, we need to fetch all the comments of th
 <?php
     $curlComments = curl_init();
     curl_setopt_array($curlComments, [
-        CURLOPT_URL => $blog_api_url . "/comments/?slug=" . $posts[0]->slug,
+        CURLOPT_URL => $blog_api_url . "/comments/?post=" . $posts[0]->id,
         CURLOPT_RETURNTRANSFER => 1
     ]);
     $responseComments = curl_exec($curlComments);
